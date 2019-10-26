@@ -1,0 +1,4 @@
+data/
+*.pyc
+submit_*.sh
+saved_models/

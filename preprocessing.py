@@ -8,7 +8,7 @@ def load_vocab(filename):
     for i,word in enumerate(lines)
   }
 
-vocab = load_vocab('/home/ubuntu/dual_encoder/data/vocabulary.txt')
+vocab = load_vocab('data/vocabulary.txt')
 
 def load_glove_embeddings(filename='data/glove.6B.100d.txt'):
   lines = open(filename).readlines()
