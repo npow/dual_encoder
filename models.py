@@ -1,13 +1,10 @@
 import preprocessing
-import datetime
-import time
 import torch
 
 from torch import nn
 from torch.nn import init
-from torch.autograd import Variable
+from qanta.util.kvmnn import KeyValueMemoryNetwork
 
-# dtype = torch.FloatTensor
 dtype = torch.cuda.FloatTensor  # Uncomment this to run on GPU
 
 
@@ -73,7 +70,7 @@ class Encoder(nn.Module):
 
 
 class DualEncoder(nn.Module):
-    def __init__(self, encoder):
+    def __init__(self, encoder, use_memory=False, nn_dropout=0.0):
         super(DualEncoder, self).__init__()
         self.encoder = encoder
         h_size = self.encoder.hidden_size * self.encoder.num_directions
@@ -83,22 +80,14 @@ class DualEncoder(nn.Module):
             M,
             requires_grad=True,
         )
-        # W = torch.FloatTensor(h_size, h_size).cuda()
-        # init.normal(W)
-        # self.W = nn.Parameter(
-        #  W,
-        #  requires_grad=True,
-        # )
         dense_dim = 2 * self.encoder.hidden_size
         self.dense = nn.Linear(dense_dim, dense_dim).cuda()
-        # self.dense2 = nn.Linear(dense_dim, 1).cuda()
+        if use_memory:
+            self.kvmnn = KeyValueMemoryNetwork(text_embeddings=encoder.embedding, num_classes=None, nn_dropout=nn_dropout)
 
-    def forward(self, contexts, responses, contexts2):
-        # print("start", datetime.datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S.%f'))
+    def forward(self, contexts, responses):
         context_os, context_hs = self.encoder(contexts)
-        # print("context", datetime.datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S.%f'))
         response_os, response_hs = self.encoder(responses)
-        # print("response", datetime.datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S.%f'))
 
         if self.encoder.rnn_type == 'lstm':
             context_hs = context_hs[0]
@@ -112,33 +101,10 @@ class DualEncoder(nn.Module):
             context_h = context_os[i][-1].view(1, h_size)
             response_h = response_os[i][-1].view(h_size, 1)
 
-            # First get the real context_h by attending over the response
-            # context_h = Variable(torch.zeros(h_size)).cuda()
-            # total_weight = 0
-            # for j in range(len(context_os[-1])):
-            #  if contexts2[i][j] != 2 and j != len(context_os[-1]) - 1:
-            #    continue
-
-            #  cur_weight = torch.exp(torch.mm(torch.mm(context_os[i][j].view(1, h_size), self.W), response_h))[0]
-            #  context_h += torch.mul(context_os[i][j], cur_weight.expand_as(context_os[i][j]))
-            #  total_weight += cur_weight
-
-            # context_h.div(torch.sum(total_weight).expand_as(context_h))
-            # context_h = context_h.view(1, h_size)
-
-            # context_a = torch.mm(torch.mm(context_h, W)
-
-            # context_h = torch.mm(torch.mm(context_os[i], self.W).view(1, 160), context_os[i]).view(1, h_size)
-            # response_h = torch.mm(torch.mm(response_os[i], self.W).view(1, 160), response_os[i]).view(h_size, 1)
-
-            # dense_input = torch.cat((context_h, response_h), 1)
-            # ans = self.dense2(self.dense(dense_input))
-            # ans = self.dense2(dense_input)
             ans = torch.mm(torch.mm(context_h, self.M), response_h)[0][0]
             results.append(torch.sigmoid(ans))
             response_encodings.append(response_h)
 
         results = torch.stack(results)
-        # print("multiplies", datetime.datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S.%f'))
 
         return results, response_encodings
