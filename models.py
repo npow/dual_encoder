@@ -59,12 +59,12 @@ class Encoder(nn.Module):
         return outputs, hiddens
 
     def init_weights(self):
-        init.orthogonal(self.rnn.weight_ih_l0)
-        init.uniform(self.rnn.weight_hh_l0, a=-0.01, b=0.01)
+        init.orthogonal_(self.rnn.weight_ih_l0)
+        init.uniform_(self.rnn.weight_hh_l0, a=-0.01, b=0.01)
 
         glove_embeddings = preprocessing.load_glove_embeddings()
         embedding_weights = torch.FloatTensor(self.vocab_size, self.input_size)
-        init.uniform(embedding_weights, a=-0.25, b=0.25)
+        init.uniform_(embedding_weights, a=-0.25, b=0.25)
         for k, v in glove_embeddings.items():
             embedding_weights[k] = torch.FloatTensor(v)
         embedding_weights[0] = torch.FloatTensor([0] * self.input_size)
@@ -78,7 +78,7 @@ class DualEncoder(nn.Module):
         self.encoder = encoder
         h_size = self.encoder.hidden_size * self.encoder.num_directions
         M = torch.FloatTensor(h_size, h_size).cuda()
-        init.normal(M)
+        init.normal_(M)
         self.M = nn.Parameter(
             M,
             requires_grad=True,
