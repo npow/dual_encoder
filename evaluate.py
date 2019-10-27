@@ -6,6 +6,7 @@ from tqdm import tqdm
 
 from torch.autograd import Variable
 
+
 def evaluate(model, size=None, split='dev'):
     model = model.eval()
     """
@@ -16,17 +17,17 @@ def evaluate(model, size=None, split='dev'):
     else:
         ds = data.get_test(size)
     ds = list(map(preprocessing.process_valid, ds))
-    recall_k = {k:0 for k in range(1,11)}
+    recall_k = {k: 0 for k in range(1, 11)}
 
     for e in tqdm(ds):
         context, response, distractors = e
-        
+
         with torch.no_grad():
             cs = Variable(torch.stack([torch.LongTensor(context) for i in range(10)], 0)).cuda()
             rs = [torch.LongTensor(response)]
             rs += [torch.LongTensor(distractor) for distractor in distractors]
             rs = Variable(torch.stack(rs, 0)).cuda()
-            
+
             results, responses = model(cs, rs, [context for i in range(10)])
         results = np.array([e.item() for e in results])
 
@@ -40,6 +41,7 @@ def evaluate(model, size=None, split='dev'):
         recall_k[k] = v / len(ds)
 
     return recall_k
+
 
 if __name__ == '__main__':
     model = torch.load("SAVED_MODEL")
