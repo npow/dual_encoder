@@ -3,10 +3,9 @@ data/
 submit_*.sh
 saved_models/
 .idea/
-<<<<<<< 60b872a44248796d3451857498b589d312dc647c
 .ipynb_checkpoints/
 *.txt
 *.ipynb
-=======
 *.gz
->>>>>>> fixes
+vectors/
+*.pt
