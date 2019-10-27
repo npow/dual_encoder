@@ -1,9 +1,12 @@
+import sys
+sys.path += ['../qb']
+
 import preprocessing
 import torch
 
 from torch import nn
 from torch.nn import init
-from qanta.util.kvmnn import KeyValueMemoryNetwork
+from qanta.util.kvmnn import KeyValueMemoryNet
 
 dtype = torch.cuda.FloatTensor  # Uncomment this to run on GPU
 
@@ -83,28 +86,14 @@ class DualEncoder(nn.Module):
         dense_dim = 2 * self.encoder.hidden_size
         self.dense = nn.Linear(dense_dim, dense_dim).cuda()
         if use_memory:
-            self.kvmnn = KeyValueMemoryNetwork(text_embeddings=encoder.embedding, num_classes=None, nn_dropout=nn_dropout)
+            self.kvmnn = KeyValueMemoryNet(text_embeddings=encoder.embedding, num_classes=None, nn_dropout=nn_dropout)
 
     def forward(self, contexts, responses):
-        context_os, context_hs = self.encoder(contexts)
-        response_os, response_hs = self.encoder(responses)
+        context_os, _ = self.encoder(contexts)
+        response_os, _ = self.encoder(responses)
 
-        if self.encoder.rnn_type == 'lstm':
-            context_hs = context_hs[0]
-            response_hs = response_hs[0]
-
-        results = []
-        response_encodings = []
-
-        h_size = self.encoder.hidden_size * self.encoder.num_directions
-        for i in range(len(context_hs[0])):
-            context_h = context_os[i][-1].view(1, h_size)
-            response_h = response_os[i][-1].view(h_size, 1)
-
-            ans = torch.mm(torch.mm(context_h, self.M), response_h)[0][0]
-            results.append(torch.sigmoid(ans))
-            response_encodings.append(response_h)
-
-        results = torch.stack(results)
+        response_encodings = response_os[:,-1,:]
+        results = torch.bmm((context_os[:,-1,:] @ self.M).unsqueeze(1), response_encodings.unsqueeze(-1)).squeeze()
+        results = torch.sigmoid(results)
 
         return results, response_encodings
