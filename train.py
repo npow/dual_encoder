@@ -43,20 +43,18 @@ for i in range(num_epochs):
     count = 0
 
     cs, rs, ys = [], [], []
-    contexts = []
     for c, r, y in batch:
         count += 1
 
         cs.append(torch.LongTensor(c))
         rs.append(torch.LongTensor(r))
         ys.append(torch.FloatTensor([y]))
-        contexts.append(c)
 
     cs = Variable(torch.stack(cs, 0)).cuda()
     rs = Variable(torch.stack(rs, 0)).cuda()
     ys = Variable(torch.stack(ys, 0)).cuda()
 
-    y_preds, responses = model(cs, rs, contexts)
+    y_preds, responses = model(cs, rs)
     loss = loss_fn(y_preds, ys)
 
     recall_k = evaluate.evaluate(model, size=evaluate_batch_size, split='dev')
