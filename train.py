@@ -73,13 +73,14 @@ for i in range(num_epochs):
     if prev_recall_k is not None:
         if recall_k[1] > prev_recall_k[1]:
             prev_recall_k = recall_k
+            torch.save(model.state_dict(), '{}/model.pt'.format(CHECKPOINT_DIR))
         else:
             print('early stopping!!')
             break
     else:
         prev_recall_k = recall_k
+        torch.save(model.state_dict(), '{}/model.pt'.format(CHECKPOINT_DIR))
     print('loss: ', np.mean(losses), 'recall: ', recall_k)
 
-torch.save(model.state_dict(), '{}/model.pt'.format(CHECKPOINT_DIR))
 recall_k = evaluate.evaluate(model, size=evaluate_batch_size, split='test')
 print('test recall: ', recall_k)
