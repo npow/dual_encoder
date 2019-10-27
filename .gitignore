@@ -3,3 +3,4 @@ data/
 submit_*.sh
 saved_models/
 .idea/
+*.gz

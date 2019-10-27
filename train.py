@@ -31,7 +31,7 @@ loss_fn.cuda()
 learning_rate = 0.001
 num_epochs = 30000
 batch_size = 512
-evaluate_batch_size = None
+evaluate_batch_size = 100
 
 optimizer = optim.Adam(model.parameters(), lr=learning_rate)
 

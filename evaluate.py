@@ -28,7 +28,7 @@ def evaluate(model, size=None, split='dev'):
             rs += [torch.LongTensor(distractor) for distractor in distractors]
             rs = Variable(torch.stack(rs, 0)).cuda()
 
-            results, responses = model(cs, rs, [context for i in range(10)])
+            results, responses = model(cs, rs)
         results = np.array([e.item() for e in results])
 
         ranking = np.argsort(-results)
