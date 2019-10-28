@@ -21,6 +21,7 @@ class Encoder(nn.Module):
             dropout=0,
             bidirectional=True,
             rnn_type='gru',
+            pretrained_vectors='glove',
     ):
         super(Encoder, self).__init__()
         self.num_directions = 2 if bidirectional else 1
@@ -29,6 +30,7 @@ class Encoder(nn.Module):
         self.hidden_size = hidden_size // self.num_directions
         self.num_layers = num_layers
         self.rnn_type = rnn_type
+        self.pretrained_vectors = pretrained_vectors
 
         self.embedding = nn.Embedding(vocab_size, input_size, sparse=False, padding_idx=0)
 
@@ -62,10 +64,10 @@ class Encoder(nn.Module):
         init.orthogonal_(self.rnn.weight_ih_l0)
         init.uniform_(self.rnn.weight_hh_l0, a=-0.01, b=0.01)
 
-        glove_embeddings = preprocessing.load_glove_embeddings()
+        embeddings = preprocessing.load_embeddings(self.pretrained_vectors)
         embedding_weights = torch.FloatTensor(self.vocab_size, self.input_size)
         init.uniform_(embedding_weights, a=-0.25, b=0.25)
-        for k, v in glove_embeddings.items():
+        for k, v in embeddings.items():
             embedding_weights[k] = torch.FloatTensor(v)
         embedding_weights[0] = torch.FloatTensor([0] * self.input_size)
         del self.embedding.weight

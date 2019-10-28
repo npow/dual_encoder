@@ -16,11 +16,12 @@ CHECKPOINT_DIR = os.environ['CHECKPOINT_DIR']
 
 use_memory = True
 encoder_model = models.Encoder(
-    input_size=100,  # embedding dim
+    input_size=300,  # embedding dim
     hidden_size=200,  # rnn dim
     vocab_size=len(preprocessing.vocab),  # vocab size
     bidirectional=True,  # really should change!
     rnn_type='lstm',
+    pretrained_vectors='stackexchange',
 )
 encoder_model.cuda()
 
