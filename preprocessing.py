@@ -1,5 +1,6 @@
 import nltk
 from nltk.stem import SnowballStemmer
+from gensim.models import Word2Vec
 
 
 def load_vocab(filename):
@@ -11,6 +12,25 @@ def load_vocab(filename):
 
 
 vocab = load_vocab('data/vocabulary.txt')
+
+
+def load_embeddings(vectors):
+    if vectors == 'glove':
+        return load_glove_embeddings()
+    elif vectors == 'stackexchange':
+        return load_stackexchange_embeddings()
+    else:
+        raise 'Unknown embeddings: {}'.format(vectors)
+
+
+def load_stackexchange_embeddings(filename='vectors/word2vec_stackexchange.model'):
+    model = Word2Vec.load(filename)
+    embeddings = {}
+    for word in vocab:
+        if word not in model.wv.vocab:
+            continue
+        embeddings[vocab[word]] = model.wv.get_vector(word).tolist()
+    return embeddings
 
 
 def load_glove_embeddings(filename='data/glove.6B.100d.txt'):
