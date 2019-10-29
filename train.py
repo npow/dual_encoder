@@ -43,7 +43,6 @@ for i in range(num_epochs):
     model = model.train()
     losses = []
     recalls = []
-    prev_recall_k = None
     for batch_idx in tqdm(range(num_batches)):
         batch = data.get_batch(batch_idx, batch_size)
         batch = list(map(preprocessing.process_train, batch))
@@ -71,7 +70,7 @@ for i in range(num_epochs):
 
     recall_k = evaluate.evaluate(model, size=evaluate_batch_size, split='dev')
     if prev_recall_k is not None:
-        if recall_k[1] > prev_recall_k[1]:
+        if recall_k[1] >= prev_recall_k[1]:
             prev_recall_k = recall_k
             torch.save(model.state_dict(), '{}/model.pt'.format(CHECKPOINT_DIR))
         else:
@@ -80,7 +79,7 @@ for i in range(num_epochs):
     else:
         prev_recall_k = recall_k
         torch.save(model.state_dict(), '{}/model.pt'.format(CHECKPOINT_DIR))
-    print('loss: ', np.mean(losses), 'recall: ', recall_k)
+    print('epoch: ', i, 'loss: ', np.mean(losses), 'recall: ', recall_k)
 
 recall_k = evaluate.evaluate(model, size=evaluate_batch_size, split='test')
 print('test recall: ', recall_k)
