@@ -90,6 +90,10 @@ class DualEncoder(nn.Module):
 
         self.kvmnn = KeyValueMemoryNet(text_embeddings=encoder.embedding, num_classes=None, nn_dropout=nn_dropout)
         self.use_memory = use_memory
+        self.memory_gate = nn.Sequential([
+            nn.Linear(h_size, 1, bias=True),
+            nn.Sigmoid(),
+        ])
 
     def forward(self, contexts, responses, memory_keys, memory_key_lengths, memory_values, memory_value_lengths):
         context_lengths = (contexts > 0).sum(dim=-1)
@@ -105,7 +109,10 @@ class DualEncoder(nn.Module):
             memory_encodings = self.kvmnn(query=contexts, query_lengths=context_lengths,
                                           memory_keys=memory_keys, memory_key_lengths=memory_key_lengths,
                                           memory_values=memory_values, memory_value_lengths=memory_value_lengths)
-            results = results + torch.bmm((memory_encodings @ self.N).unsqueeze(1), response_encodings.unsqueeze(-1))
+            memory_results = torch.bmm((memory_encodings @ self.N).unsqueeze(1), response_encodings.unsqueeze(-1))
+
+            alpha = self.memory_gate(results + memory_results)
+            results = results + alpha * memory_results
 
         results = torch.sigmoid(results).unsqueeze(-1)
 
