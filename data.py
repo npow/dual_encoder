@@ -4,12 +4,13 @@ from tqdm import tqdm
 
 def load_jsonl(fname):
     with open(fname) as f:
-        return [json.loads(s.strip()) for s in f.readlines()]
+        lines = f.readlines()
+    return [json.loads(s.strip()) for s in tqdm(lines)]
 
 
-L_train = load_jsonl('data/train.jsonl')[:100]
-L_valid = load_jsonl('data/valid.jsonl')[:100]
-L_test = load_jsonl('data/test.jsonl')[:100]
+L_train = load_jsonl('data/train.jsonl')
+L_valid = load_jsonl('data/valid.jsonl')
+L_test = load_jsonl('data/test.jsonl')
 
 
 def get_batch(epoch, batch_size):
