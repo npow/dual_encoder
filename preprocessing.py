@@ -60,33 +60,6 @@ def process_sequence(seq):
     return seq, seq_lens
 
 
-<<<<<<< beee69d5815752a3cc26112e33ef6a082bbf69d0
-def process_train(row):
-    context, response, memory_keys, memory_values, label = row
-
-    context = numberize(context)
-    response = numberize(response)
-    label = int(label)
-    memory_keys, memory_key_lengths = process_sequence(memory_keys)
-    memory_values, memory_value_lengths = process_sequence(memory_values)
-
-    return context, response, memory_keys, memory_key_lengths, memory_values, memory_value_lengths, label
-
-
-def process_valid(row):
-    context = row[0]
-    response = row[1]
-    memory_keys = row[2]
-    memory_values = row[3]
-    distractors = row[4:]
-
-    context = numberize(context)
-    response = numberize(response)
-    memory_keys, memory_key_lengths = process_sequence(memory_keys)
-    memory_values, memory_value_lengths = process_sequence(memory_values)
-
-    distractors = [
-=======
 def process_train_batch(rows):
     cs = [numberize(x) for x in rows['c']]
     rs = [numberize(x) for x in rows['r']]
