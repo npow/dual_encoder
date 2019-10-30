@@ -7,8 +7,10 @@ from params import args
 use_memory = args.use_memory != 0
 
 def load_jsonl(fname):
+    lines = []
     with open(fname) as f:
-        lines = f.readlines()
+        for line in f:
+            lines.append(line)
     return [json.loads(s.strip()) for s in tqdm(lines)]
 
 
