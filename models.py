@@ -104,19 +104,19 @@ class DualEncoder(nn.Module):
         context_encodings = context_os[:,-1,:]
         response_os, _ = self.encoder(responses)
         response_encodings = response_os[:,-1,:]
-
-        results = torch.bmm((context_encodings @ self.M).unsqueeze(1), response_encodings.unsqueeze(-1))
+        cMr = torch.bmm((context_encodings @ self.M).unsqueeze(1), response_encodings.unsqueeze(-1)).squeeze(-1)
+        results = cMr
 
         if self.use_memory:
             memory_encodings = self.kvmnn(query=contexts, query_lengths=context_lengths,
                                           memory_keys=memory_keys, memory_key_lengths=memory_key_lengths,
                                           memory_values=memory_values, memory_value_lengths=memory_value_lengths)
-            memory_results = torch.bmm((memory_encodings @ self.N).unsqueeze(1), response_encodings.unsqueeze(-1))
+            memory_results = (memory_encodings @ self.N)
+            alpha = self.memory_gate(memory_results)
+            mNr = torch.bmm(memory_results.unsqueeze(1), response_encodings.unsqueeze(-1)).squeeze(-1)
+            results = results + alpha * mNr
 
-            alpha = self.memory_gate(results + memory_results)
-            results = results + alpha * memory_results
-
-        results = torch.sigmoid(results).unsqueeze(-1)
+        results = torch.sigmoid(results)
 
         return results, response_encodings
 
