@@ -3,6 +3,8 @@ import itertools
 import numpy as np
 from tqdm import tqdm
 from tensorflow.keras.preprocessing.sequence import pad_sequences
+from params import args
+use_memory = args.use_memory != 0
 
 def load_jsonl(fname):
     with open(fname) as f:
@@ -59,15 +61,16 @@ def process_train(row):
 
     memory_keys = []
     memory_values = []
-    for k, v in row['m'].items():
-        memory_keys += v
-        memory_values += ([k]*len(v))
-    if len(memory_keys) < 50:
-        memory_keys += ['<pad>'] * (50-len(memory_keys))
-        memory_values += ['<pad>'] * (50-len(memory_values))
+    if use_memory:
+        for k, v in row['m'].items():
+            memory_keys += v
+            memory_values += ([k]*len(v))
+        if len(memory_keys) < 50:
+            memory_keys += ['<pad>'] * (50-len(memory_keys))
+            memory_values += ['<pad>'] * (50-len(memory_values))
 
-    memory_keys = [numberize(x) for x in memory_keys]
-    memory_values = [numberize(x) for x in memory_values]
+        memory_keys = [numberize(x) for x in memory_keys]
+        memory_values = [numberize(x) for x in memory_values]
 
     return {
         'c': cs,
@@ -84,10 +87,13 @@ def process_train_batch(rows):
     rs = pad_sequences([row['r'] for row in rows], maxlen=160)
     ys = [row['y'] for row in rows]
 
-    memory_keys = pad_sequences(list(itertools.chain(*[row['memory_keys'] for row in rows]))).reshape((bsz, 50, -1))
-    memory_values = pad_sequences(list(itertools.chain(*[row['memory_values'] for row in rows]))).reshape((bsz, 50, -1))
-    memory_key_lengths = (memory_keys > 0).sum(-1)
-    memory_value_lengths = (memory_values > 0).sum(-1)
+    if use_memory:
+        memory_keys = pad_sequences(list(itertools.chain(*[row['memory_keys'] for row in rows]))).reshape((bsz, 50, -1))
+        memory_values = pad_sequences(list(itertools.chain(*[row['memory_values'] for row in rows]))).reshape((bsz, 50, -1))
+        memory_key_lengths = (memory_keys > 0).sum(-1)
+        memory_value_lengths = (memory_values > 0).sum(-1)
+    else:
+        memory_keys, memory_values, memory_key_lengths, memory_value_lengths = [], [], [], []
 
     return {
         'cs': cs,
@@ -110,14 +116,17 @@ def process_valid(row):
 
     memory_keys = []
     memory_values = []
-    for k, v in row['m'].items():
-        memory_keys += v
-        memory_values += ([k]*len(v))
-    if len(memory_keys) < 50:
-        memory_keys += ['<pad>'] * (50-len(memory_keys))
-        memory_values += ['<pad>'] * (50-len(memory_values))
-    memory_keys, memory_key_lengths = process_sequence(memory_keys)
-    memory_values, memory_value_lengths = process_sequence(memory_values)
+    memory_key_lengths = []
+    memory_value_lengths = []
+    if use_memory:
+        for k, v in row['m'].items():
+            memory_keys += v
+            memory_values += ([k]*len(v))
+        if len(memory_keys) < 50:
+            memory_keys += ['<pad>'] * (50-len(memory_keys))
+            memory_values += ['<pad>'] * (50-len(memory_values))
+        memory_keys, memory_key_lengths = process_sequence(memory_keys)
+        memory_values, memory_value_lengths = process_sequence(memory_values)
 
     return {
         'c': cs,
