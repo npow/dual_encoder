@@ -45,7 +45,7 @@ def evaluate(L, model, size=None):
                 recall_k[k] += 1
 
     for k, v in recall_k.items():
-        recall_k[k] = v / len(ds)
+        recall_k[k] = v / len(L)
 
     return recall_k
 

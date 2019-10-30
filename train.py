@@ -9,8 +9,6 @@ import torch
 from torch import optim
 from tqdm import tqdm
 
-vocab = data.load_vocab()
-
 pretrained_vectors = args.pretrained_vectors
 checkpoint_dir = args.checkpoint_dir
 learning_rate = args.lr
@@ -23,8 +21,8 @@ use_memory = args.use_memory != 0
 
 
 L_train = load_jsonl('data/train.jsonl')
-L_valid = load_jsonl('data/train.jsonl')
-L_test = load_jsonl('data/train.jsonl')
+L_valid = load_jsonl('data/valid.jsonl')
+L_test = load_jsonl('data/test.jsonl')
 
 vocab = data.get_vocab(L_train)
 
@@ -34,9 +32,10 @@ L_test = [process_valid(vocab, row) for row in tqdm(L_test)]
 
 
 encoder_model = models.Encoder(
+    vocab=vocab,
     input_size=input_size,  # embedding dim
     hidden_size=input_size,  # rnn dim
-    vocab_size=len(data.vocab),  # vocab size
+    vocab_size=len(vocab),  # vocab size
     bidirectional=True,  # really should change!
     rnn_type='lstm',
     pretrained_vectors=pretrained_vectors,
