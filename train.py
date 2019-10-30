@@ -24,7 +24,11 @@ L_train = load_jsonl('data/train.jsonl')
 L_valid = load_jsonl('data/valid.jsonl')
 L_test = load_jsonl('data/test.jsonl')
 
-vocab = data.get_vocab(L_train)
+if use_memory:
+    #vocab = data.get_vocab(L_train)
+    vocab = data.load_vocab('data/vocabulary.txt')
+else:
+    vocab = data.load_vocab('data/vocabulary.txt')
 
 L_train = [process_train(vocab, row) for row in tqdm(L_train)]
 L_valid = [process_valid(vocab, row) for row in tqdm(L_valid)]

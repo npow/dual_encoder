@@ -13,3 +13,4 @@ vectors/
 *.txt
 *.ipynb
 *.pkl
+*.output
