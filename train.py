@@ -16,12 +16,12 @@ CHECKPOINT_DIR = os.environ['CHECKPOINT_DIR']
 
 use_memory = True
 encoder_model = models.Encoder(
-    input_size=300,  # embedding dim
-    hidden_size=300,  # rnn dim
+    input_size=100,  # embedding dim
+    hidden_size=100,  # rnn dim
     vocab_size=len(preprocessing.vocab),  # vocab size
     bidirectional=True,  # really should change!
     rnn_type='lstm',
-    pretrained_vectors='stackexchange',
+    pretrained_vectors='glove',
 )
 encoder_model.cuda()
 
@@ -32,11 +32,10 @@ loss_fn = torch.nn.BCELoss()
 loss_fn.cuda()
 
 learning_rate = 0.001
-num_epochs = 1
-batch_size = 512
+num_epochs = 100
+batch_size = 32
 evaluate_batch_size = None
 num_batches = int(10e6//batch_size)
-num_batches = 1
 
 optimizer = optim.Adam(model.parameters(), lr=learning_rate)
 
