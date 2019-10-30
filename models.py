@@ -112,9 +112,9 @@ class DualEncoder(nn.Module):
                                           memory_keys=memory_keys, memory_key_lengths=memory_key_lengths,
                                           memory_values=memory_values, memory_value_lengths=memory_value_lengths)
             memory_results = (memory_encodings @ self.N)
-            alpha = self.memory_gate(memory_results)
+            #alpha = self.memory_gate(memory_results)
             mNr = torch.bmm(memory_results.unsqueeze(1), response_encodings.unsqueeze(-1)).squeeze(-1)
-            results = results + alpha * mNr
+            results = results + mNr
 
         results = torch.sigmoid(results)
 
