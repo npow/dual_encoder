@@ -3,19 +3,18 @@ from nltk.stem import SnowballStemmer
 from tensorflow.keras.preprocessing.sequence import pad_sequences
 from gensim.models import Word2Vec
 from tqdm import tqdm
-from data import vocab
 
 
-def load_embeddings(vectors):
+def load_embeddings(vocab, vectors):
     if vectors == 'glove':
-        return load_glove_embeddings()
+        return load_glove_embeddings(vocab)
     elif vectors == 'stackexchange':
-        return load_stackexchange_embeddings()
+        return load_stackexchange_embeddings(vocab)
     else:
         raise 'Unknown embeddings: {}'.format(vectors)
 
 
-def load_stackexchange_embeddings(filename='vectors/word2vec_stackexchange.model'):
+def load_stackexchange_embeddings(vocab, filename='vectors/word2vec_stackexchange.model'):
     print('loading: ', filename)
     model = Word2Vec.load(filename)
     embeddings = {}
@@ -26,7 +25,7 @@ def load_stackexchange_embeddings(filename='vectors/word2vec_stackexchange.model
     return embeddings
 
 
-def load_glove_embeddings(filename='data/glove.6B.100d.txt'):
+def load_glove_embeddings(vocab, filename='data/glove.6B.100d.txt'):
     print('loading: ', filename)
     lines = open(filename).readlines()
     embeddings = {}

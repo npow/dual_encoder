@@ -9,6 +9,8 @@ import torch
 from torch import optim
 from tqdm import tqdm
 
+vocab = data.load_vocab()
+
 pretrained_vectors = args.pretrained_vectors
 checkpoint_dir = args.checkpoint_dir
 learning_rate = args.lr
@@ -18,6 +20,18 @@ evaluate_batch_size = None
 patience = args.patience
 input_size = 100 if pretrained_vectors == 'glove' else 300
 use_memory = args.use_memory != 0
+
+
+L_train = load_jsonl('data/train.jsonl')
+L_valid = load_jsonl('data/train.jsonl')
+L_test = load_jsonl('data/train.jsonl')
+
+vocab = data.get_vocab(L_train)
+
+L_train = [process_train(vocab, row) for row in tqdm(L_train)]
+L_valid = [process_valid(vocab, row) for row in tqdm(L_valid)]
+L_test = [process_valid(vocab, row) for row in tqdm(L_test)]
+
 
 encoder_model = models.Encoder(
     input_size=input_size,  # embedding dim
@@ -35,15 +49,11 @@ model.cuda()
 loss_fn = torch.nn.BCELoss()
 loss_fn.cuda()
 
-num_batches = int(len(data.L_train)//batch_size)
+num_batches = int(len(L_train)//batch_size)
 
 model_file = '{}/model.pt'.format(checkpoint_dir)
 optimizer = optim.Adam(model.parameters(), lr=learning_rate)
 early_stopping = models.EarlyStopping(model_file=model_file, patience=patience, verbose=True)
-
-L_train = [process_train(row) for row in tqdm(load_jsonl('data/train.jsonl'))]
-L_valid = [process_valid(row) for row in tqdm(load_jsonl('data/valid.jsonl'))]
-L_test = [process_valid(row) for row in tqdm(load_jsonl('data/test.jsonl'))]
 
 for i in range(num_epochs):
     model = model.train()

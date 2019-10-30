@@ -15,6 +15,7 @@ dtype = torch.cuda.FloatTensor  # Uncomment this to run on GPU
 class Encoder(nn.Module):
     def __init__(
             self,
+            vocab,
             input_size,
             hidden_size,
             vocab_size,
@@ -25,6 +26,7 @@ class Encoder(nn.Module):
             pretrained_vectors='glove',
     ):
         super(Encoder, self).__init__()
+        self.vocab = vocab
         self.num_directions = 2 if bidirectional else 1
         self.vocab_size = vocab_size
         self.input_size = input_size
@@ -65,7 +67,7 @@ class Encoder(nn.Module):
         init.orthogonal_(self.rnn.weight_ih_l0)
         init.uniform_(self.rnn.weight_hh_l0, a=-0.01, b=0.01)
 
-        embeddings = preprocessing.load_embeddings(self.pretrained_vectors)
+        embeddings = preprocessing.load_embeddings(self.vocab, self.pretrained_vectors)
         embedding_weights = torch.FloatTensor(self.vocab_size, self.input_size)
         init.uniform_(embedding_weights, a=-0.25, b=0.25)
         for k, v in embeddings.items():
