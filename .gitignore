@@ -9,3 +9,6 @@ saved_models/
 *.gz
 vectors/
 *.pt
+.ipynb_checkpoints/
+*.txt
+*.ipynb

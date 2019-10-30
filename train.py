@@ -32,10 +32,11 @@ loss_fn = torch.nn.BCELoss()
 loss_fn.cuda()
 
 learning_rate = 0.001
-num_epochs = 100
+num_epochs = 1
 batch_size = 512
 evaluate_batch_size = None
 num_batches = int(10e6//batch_size)
+num_batches = 1
 
 optimizer = optim.Adam(model.parameters(), lr=learning_rate)
 
@@ -46,20 +47,19 @@ for i in range(num_epochs):
     recalls = []
     for batch_idx in tqdm(range(num_batches)):
         batch = data.get_batch(batch_idx, batch_size)
-        batch = list(map(preprocessing.process_train, batch))
-        count = 0
+        batch = preprocessing.process_train_batch(batch)
 
-        cs, rs, ys = [], [], []
-        for c, r, y in batch:
-            count += 1
+        cs = torch.LongTensor(batch['cs']).cuda()
+        rs = torch.LongTensor(batch['rs']).cuda()
+        ys = torch.FloatTensor(batch['ys']).cuda()
+        memory_keys = torch.LongTensor(batch['memory_keys']).cuda()
+        memory_key_lengths = torch.LongTensor(batch['memory_key_lengths']).cuda()
+        memory_values = torch.LongTensor(batch['memory_values']).cuda()
+        memory_value_lengths = torch.LongTensor(batch['memory_value_lengths']).cuda()
 
-            cs.append(torch.LongTensor(c))
-            rs.append(torch.LongTensor(r))
-            ys.append(torch.FloatTensor([y]))
-
-        cs = Variable(torch.stack(cs, 0)).cuda()
-        rs = Variable(torch.stack(rs, 0)).cuda()
-        ys = Variable(torch.stack(ys, 0)).cuda()
+        y_preds, responses = model(contexts=cs, responses=rs,
+                                   memory_keys=memory_keys, memory_key_lengths=memory_key_lengths,
+                                   memory_values=memory_values, memory_value_lengths=memory_value_lengths)
 
         y_preds, responses = model(cs, rs)
         loss = loss_fn(y_preds, ys)

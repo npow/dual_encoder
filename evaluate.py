@@ -19,8 +19,14 @@ def evaluate(model, size=None, split='dev'):
     ds = list(map(preprocessing.process_valid, ds))
     recall_k = {k: 0 for k in range(1, 11)}
 
-    for e in tqdm(ds):
-        context, response, memory_keys, memory_key_lengths, memory_values, memory_value_lengths, distractors = e
+    for row in tqdm(ds):
+        context = row['c']
+        response = row['r']
+        distractors = row['ds']
+        memory_keys = row['memory_keys']
+        memory_key_lengths = row['memory_key_lengths']
+        memory_values = row['memory_values']
+        memory_value_lengths = row['memory_value_lengths']
 
         with torch.no_grad():
             cs = Variable(torch.stack([torch.LongTensor(context) for i in range(10)], 0)).cuda()

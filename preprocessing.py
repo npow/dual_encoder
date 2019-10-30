@@ -60,6 +60,7 @@ def process_sequence(seq):
     return seq, seq_lens
 
 
+<<<<<<< beee69d5815752a3cc26112e33ef6a082bbf69d0
 def process_train(row):
     context, response, memory_keys, memory_values, label = row
 
@@ -85,11 +86,55 @@ def process_valid(row):
     memory_values, memory_value_lengths = process_sequence(memory_values)
 
     distractors = [
+=======
+def process_train_batch(rows):
+    cs = [numberize(x) for x in rows['c']]
+    rs = [numberize(x) for x in rows['r']]
+    ys = [int(x) for x in rows['y']]
+    memory_keys = []
+    memory_values = []
+    for d in rows['m']:
+        for k, v in d.items():
+            memory_keys.append(v)
+            memory_values.append([k]*len(v))
+    memory_keys, memory_key_lengths = process_sequence(memory_keys)
+    memory_values, memory_value_lengths = process_sequence(memory_values)
+    return {
+        'cs': cs,
+        'rs': rs,
+        'ys': ys,
+        'memory_keys': memory_keys,
+        'memory_key_lengths': memory_key_lengths,
+        'memory_values': memory_values,
+        'memory_value_lengths': memory_value_lengths,
+    }
+
+
+def process_valid(row):
+    cs = numberize(row['c'])
+    rs = numberize(row['r'])
+    ds = [
         numberize(distractor)
-        for distractor in distractors
+        for distractor in row['d']
     ]
 
-    return context, response, memory_keys, memory_key_lengths, memory_values, memory_value_lengths, distractors
+    memory_keys = []
+    memory_values = []
+    for k, v in row['m'].items():
+        memory_keys.append(v)
+        memory_values.append([k]*len(v))
+    memory_keys, memory_key_lengths = process_sequence(memory_keys)
+    memory_values, memory_value_lengths = process_sequence(memory_values)
+
+    return {
+        'c': cs,
+        'r': rs,
+        'ds': ds,
+        'memory_keys': memory_keys,
+        'memory_key_lengths': memory_key_lengths,
+        'memory_values': memory_values,
+        'memory_value_lengths': memory_value_lengths,
+    }
 
 
 stemmer = SnowballStemmer("english")

@@ -105,6 +105,6 @@ class DualEncoder(nn.Module):
             context_encodings += memory_encodings
 
         results = torch.bmm((context_encodings @ self.M).unsqueeze(1), response_encodings.unsqueeze(-1)).squeeze()
-        results = torch.sigmoid(results)
+        results = torch.sigmoid(results).unsqueeze(1)
 
         return results, response_encodings
