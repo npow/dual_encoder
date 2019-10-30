@@ -36,10 +36,12 @@ num_epochs = 100
 batch_size = 32
 evaluate_batch_size = None
 num_batches = int(len(data.L_train)//batch_size)
+patience = 10
 
+model_file = '{}/model.pt'.format(CHECKPOINT_DIR)
 optimizer = optim.Adam(model.parameters(), lr=learning_rate)
+early_stopping = models.EarlyStopping(model_file=model_file, patience=patience, verbose=True)
 
-prev_recall_k = None
 for i in range(num_epochs):
     model = model.train()
     losses = []
@@ -68,17 +70,8 @@ for i in range(num_epochs):
             optimizer.step()
 
     recall_k = evaluate.evaluate(model, size=evaluate_batch_size, split='dev')
-    if prev_recall_k is not None:
-        if recall_k[1] >= prev_recall_k[1]:
-            prev_recall_k = recall_k
-            torch.save(model.state_dict(), '{}/model.pt'.format(CHECKPOINT_DIR))
-        else:
-            print('early stopping!!')
-            break
-    else:
-        prev_recall_k = recall_k
-        torch.save(model.state_dict(), '{}/model.pt'.format(CHECKPOINT_DIR))
-    print('epoch: ', i, 'loss: ', np.mean(losses), 'recall: ', recall_k)
+    early_stopping(recall_k[1], model)
+    print('epoch: ', i, 'loss: ', np.mean(losses), 'val_recall: ', recall_k)
 
 recall_k = evaluate.evaluate(model, size=evaluate_batch_size, split='test')
-print('test recall: ', recall_k)
+print('test_recall: ', recall_k)
