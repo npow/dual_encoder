@@ -12,3 +12,4 @@ vectors/
 .ipynb_checkpoints/
 *.txt
 *.ipynb
+*.pkl
