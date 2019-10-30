@@ -16,7 +16,7 @@ num_epochs = args.num_epochs
 batch_size = args.batch_size
 evaluate_batch_size = None
 patience = args.patience
-input_size = 100 if pretrained_vectors == 'glove' else 300
+input_size = 300
 use_memory = args.use_memory != 0
 
 
@@ -40,7 +40,7 @@ encoder_model = models.Encoder(
     input_size=input_size,  # embedding dim
     hidden_size=input_size,  # rnn dim
     vocab_size=len(vocab),  # vocab size
-    bidirectional=True,  # really should change!
+    bidirectional=False,
     rnn_type='lstm',
     pretrained_vectors=pretrained_vectors,
 )
@@ -73,6 +73,7 @@ for i in range(num_epochs):
         memory_values = torch.LongTensor(batch['memory_values']).cuda()
         memory_value_lengths = torch.LongTensor(batch['memory_value_lengths']).cuda()
 
+        optimizer.zero_grad()
         with torch.autograd.set_detect_anomaly(True):
             y_preds, responses = model(contexts=cs, responses=rs,
                                        memory_keys=memory_keys, memory_key_lengths=memory_key_lengths,
@@ -81,13 +82,12 @@ for i in range(num_epochs):
             loss = loss_fn(y_preds, ys)
             losses.append(loss.item())
 
-            optimizer.zero_grad()
             loss.backward()
             optimizer.step()
 
     recall_k = evaluate.evaluate(L_valid, model, size=evaluate_batch_size)
     print('epoch: ', i, 'loss: ', np.mean(losses), 'val_recall: ', recall_k)
-    early_stopping(recall_k[1], model)
+    early_stopping(-recall_k[1], model)
     if early_stopping.early_stop:
         print("Early stopping")
         break

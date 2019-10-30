@@ -25,7 +25,7 @@ def load_stackexchange_embeddings(vocab, filename='vectors/word2vec_stackexchang
     return embeddings
 
 
-def load_glove_embeddings(vocab, filename='data/glove.6B.100d.txt'):
+def load_glove_embeddings(vocab, filename='data/glove.840B.300d.txt'):
     print('loading: ', filename)
     lines = open(filename).readlines()
     embeddings = {}
