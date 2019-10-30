@@ -3,6 +3,7 @@ import numpy as np
 import preprocessing
 import torch
 from tqdm import tqdm
+from tensorflow.keras.preprocessing.sequence import pad_sequences
 
 from torch.autograd import Variable
 
@@ -30,14 +31,13 @@ def evaluate(model, size=None, split='dev'):
 
         with torch.no_grad():
             cs = Variable(torch.stack([torch.LongTensor(context) for i in range(10)], 0)).cuda()
-            rs = [torch.LongTensor(response)]
-            rs += [torch.LongTensor(distractor) for distractor in distractors]
-            rs = Variable(torch.stack(rs, 0)).cuda()
+            rs = [response] + distractors
+            rs = torch.from_numpy(pad_sequences(rs)).long().cuda()
 
-            memory_keys = torch.LongTensor(memory_keys).cuda()
-            memory_key_lengths = torch.LongTensor(memory_key_lengths).cuda()
-            memory_values = torch.LongTensor(memory_values).cuda()
-            memory_value_lengths = torch.LongTensor(memory_value_lengths).cuda()
+            memory_keys = torch.LongTensor([memory_keys]).cuda()
+            memory_key_lengths = torch.LongTensor([memory_key_lengths]).cuda()
+            memory_values = torch.LongTensor([memory_values]).cuda()
+            memory_value_lengths = torch.LongTensor([memory_value_lengths]).cuda()
 
             results, responses = model(contexts=cs, responses=rs,
                                        memory_keys=memory_keys, memory_key_lengths=memory_key_lengths,

@@ -17,7 +17,7 @@ CHECKPOINT_DIR = os.environ['CHECKPOINT_DIR']
 use_memory = True
 encoder_model = models.Encoder(
     input_size=300,  # embedding dim
-    hidden_size=200,  # rnn dim
+    hidden_size=300,  # rnn dim
     vocab_size=len(preprocessing.vocab),  # vocab size
     bidirectional=True,  # really should change!
     rnn_type='lstm',
@@ -57,17 +57,17 @@ for i in range(num_epochs):
         memory_values = torch.LongTensor(batch['memory_values']).cuda()
         memory_value_lengths = torch.LongTensor(batch['memory_value_lengths']).cuda()
 
-        y_preds, responses = model(contexts=cs, responses=rs,
-                                   memory_keys=memory_keys, memory_key_lengths=memory_key_lengths,
-                                   memory_values=memory_values, memory_value_lengths=memory_value_lengths)
+        with torch.autograd.set_detect_anomaly(True):
+            y_preds, responses = model(contexts=cs, responses=rs,
+                                       memory_keys=memory_keys, memory_key_lengths=memory_key_lengths,
+                                       memory_values=memory_values, memory_value_lengths=memory_value_lengths)
 
-        y_preds, responses = model(cs, rs)
-        loss = loss_fn(y_preds, ys)
-        losses.append(loss.item())
+            loss = loss_fn(y_preds, ys)
+            losses.append(loss.item())
 
-        optimizer.zero_grad()
-        loss.backward()
-        optimizer.step()
+            optimizer.zero_grad()
+            loss.backward()
+            optimizer.step()
 
     recall_k = evaluate.evaluate(model, size=evaluate_batch_size, split='dev')
     if prev_recall_k is not None:

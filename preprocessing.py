@@ -2,6 +2,7 @@ import nltk
 from nltk.stem import SnowballStemmer
 from tensorflow.keras.preprocessing.sequence import pad_sequences
 from gensim.models import Word2Vec
+from tqdm import tqdm
 
 
 def load_vocab(filename):
@@ -25,9 +26,10 @@ def load_embeddings(vectors):
 
 
 def load_stackexchange_embeddings(filename='vectors/word2vec_stackexchange.model'):
+    print('loading: ', filename)
     model = Word2Vec.load(filename)
     embeddings = {}
-    for word in vocab:
+    for word in tqdm(vocab):
         if word not in model.wv.vocab:
             continue
         embeddings[vocab[word]] = model.wv.get_vector(word).tolist()
@@ -35,9 +37,10 @@ def load_stackexchange_embeddings(filename='vectors/word2vec_stackexchange.model
 
 
 def load_glove_embeddings(filename='data/glove.6B.100d.txt'):
+    print('loading: ', filename)
     lines = open(filename).readlines()
     embeddings = {}
-    for line in lines:
+    for line in tqdm(lines):
         word = line.split()[0]
         embedding = list(map(float, line.split()[1:]))
         if word in vocab:
@@ -49,29 +52,42 @@ def load_glove_embeddings(filename='data/glove.6B.100d.txt'):
 def numberize(inp):
     inp = inp.split()
     result = list(map(lambda k: vocab.get(k, 0), inp))[-160:]
-    if len(result) < 160:
-        result = [0] * (160 - len(result)) + result
     return result
 
 
 def process_sequence(seq):
     seq = pad_sequences([numberize(x) for x in seq], padding='post')
-    seq_lens = (seq > 0).sum(dim=-1)
+    seq_lens = (seq > 0).sum(axis=-1)
     return seq, seq_lens
 
 
 def process_train_batch(rows):
-    cs = [numberize(x) for x in rows['c']]
-    rs = [numberize(x) for x in rows['r']]
-    ys = [int(x) for x in rows['y']]
+    cs, _ = process_sequence([(x['c']) for x in rows])
+    rs, _ = process_sequence([(x['r']) for x in rows])
+    ys = [int(x['y']) for x in rows]
     memory_keys = []
     memory_values = []
-    for d in rows['m']:
-        for k, v in d.items():
-            memory_keys.append(v)
-            memory_values.append([k]*len(v))
+    for row in rows:
+        row_keys, row_values = [], []
+        keys = list(row['m'].keys())[:5]
+        for k in keys:
+            v = row['m'][k]
+            row_keys += v
+            row_values += ([k]*len(v))
+        if len(row_keys) < 50:
+            row_keys += ['<pad>'] * (50-len(row_keys))
+            row_values += ['<pad>'] * (50-len(row_values))
+        memory_keys += row_keys
+        memory_values += row_values
     memory_keys, memory_key_lengths = process_sequence(memory_keys)
     memory_values, memory_value_lengths = process_sequence(memory_values)
+
+    bsz = len(rows)
+    memory_keys = memory_keys.reshape((bsz, 50, -1))
+    memory_values = memory_values.reshape((bsz, 50, -1))
+    memory_key_lengths = memory_key_lengths.reshape((bsz, 50))
+    memory_value_lengths = memory_value_lengths.reshape((bsz, 50))
+
     return {
         'cs': cs,
         'rs': rs,
@@ -94,8 +110,11 @@ def process_valid(row):
     memory_keys = []
     memory_values = []
     for k, v in row['m'].items():
-        memory_keys.append(v)
-        memory_values.append([k]*len(v))
+        memory_keys += v
+        memory_values += ([k]*len(v))
+    if len(memory_keys) < 50:
+        memory_keys += ['<pad>'] * (50-len(memory_keys))
+        memory_values += ['<pad>'] * (50-len(memory_values))
     memory_keys, memory_key_lengths = process_sequence(memory_keys)
     memory_values, memory_value_lengths = process_sequence(memory_values)
 

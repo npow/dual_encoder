@@ -85,8 +85,6 @@ class DualEncoder(nn.Module):
             M,
             requires_grad=True,
         )
-        dense_dim = 2 * self.encoder.hidden_size
-        self.dense = nn.Linear(dense_dim, dense_dim).cuda()
         self.kvmnn = KeyValueMemoryNet(text_embeddings=encoder.embedding, num_classes=None, nn_dropout=nn_dropout)
         self.use_memory = use_memory
 
@@ -102,7 +100,7 @@ class DualEncoder(nn.Module):
             memory_encodings = self.kvmnn(query=contexts, query_lengths=context_lengths,
                                            memory_keys=memory_keys, memory_key_lengths=memory_key_lengths,
                                            memory_values=memory_values, memory_value_lengths=memory_value_lengths)
-            context_encodings += memory_encodings
+            context_encodings = context_encodings + memory_encodings
 
         results = torch.bmm((context_encodings @ self.M).unsqueeze(1), response_encodings.unsqueeze(-1)).squeeze()
         results = torch.sigmoid(results).unsqueeze(1)
