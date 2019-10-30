@@ -1,6 +1,5 @@
 import json
 import itertools
-import numpy as np
 from tqdm import tqdm
 from tensorflow.keras.preprocessing.sequence import pad_sequences
 from params import args
@@ -25,23 +24,9 @@ def load_vocab(filename):
 vocab = load_vocab('data/vocabulary.txt')
 
 
-def get_batch(epoch, batch_size):
+def get_batch(L_train, epoch, batch_size):
     start = epoch * batch_size % len(L_train)
     return process_train_batch(L_train[start:start + batch_size])
-
-
-def get_validation(num=None):
-    if num is None:
-        return L_valid
-
-    return L_valid[:num]
-
-
-def get_test(num=None):
-    if num is None:
-        return L_test
-
-    return L_test[:num]
 
 
 def numberize(inp):
@@ -139,10 +124,3 @@ def process_valid(row):
         'memory_values': memory_values,
         'memory_value_lengths': memory_value_lengths,
     }
-
-
-L_train = [process_train(row) for row in tqdm(load_jsonl('data/train.jsonl'))]
-L_valid = [process_valid(row) for row in tqdm(load_jsonl('data/valid.jsonl'))]
-L_test = [process_valid(row) for row in tqdm(load_jsonl('data/test.jsonl'))]
-
-

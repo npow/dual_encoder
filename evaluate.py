@@ -7,18 +7,14 @@ from tensorflow.keras.preprocessing.sequence import pad_sequences
 from torch.autograd import Variable
 
 
-def evaluate(model, size=None, split='dev'):
+def evaluate(L, model, size=None):
     model = model.eval()
     """
     Evaluate the model on a subset of dataset.
     """
-    if split == 'dev':
-        ds = data.get_validation(size)
-    else:
-        ds = data.get_test(size)
     recall_k = {k: 0 for k in range(1, 11)}
 
-    for row in tqdm(ds):
+    for row in tqdm(L):
         context = row['c']
         response = row['r']
         distractors = row['ds']
