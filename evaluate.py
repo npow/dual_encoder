@@ -20,7 +20,7 @@ def evaluate(model, size=None, split='dev'):
     recall_k = {k: 0 for k in range(1, 11)}
 
     for e in tqdm(ds):
-        context, response, distractors = e
+        context, response, memory_keys, memory_key_lengths, memory_values, memory_value_lengths, distractors = e
 
         with torch.no_grad():
             cs = Variable(torch.stack([torch.LongTensor(context) for i in range(10)], 0)).cuda()
@@ -28,8 +28,15 @@ def evaluate(model, size=None, split='dev'):
             rs += [torch.LongTensor(distractor) for distractor in distractors]
             rs = Variable(torch.stack(rs, 0)).cuda()
 
-            results, responses = model(cs, rs, [context for i in range(10)])
-        results = np.array([e.item() for e in results])
+            memory_keys = torch.LongTensor(memory_keys).cuda()
+            memory_key_lengths = torch.LongTensor(memory_key_lengths).cuda()
+            memory_values = torch.LongTensor(memory_values).cuda()
+            memory_value_lengths = torch.LongTensor(memory_value_lengths).cuda()
+
+            results, responses = model(contexts=cs, responses=rs,
+                                       memory_keys=memory_keys, memory_key_lengths=memory_key_lengths,
+                                       memory_values=memory_values, memory_value_lengths=memory_value_lengths)
+            results = np.array([e.item() for e in results])
 
         ranking = np.argsort(-results)
         for k in recall_k.keys():

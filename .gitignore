@@ -3,3 +3,6 @@ data/
 submit_*.sh
 saved_models/
 .idea/
+.ipynb_checkpoints/
+*.txt
+*.ipynb

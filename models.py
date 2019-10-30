@@ -85,15 +85,24 @@ class DualEncoder(nn.Module):
         )
         dense_dim = 2 * self.encoder.hidden_size
         self.dense = nn.Linear(dense_dim, dense_dim).cuda()
-        if use_memory:
-            self.kvmnn = KeyValueMemoryNet(text_embeddings=encoder.embedding, num_classes=None, nn_dropout=nn_dropout)
+        self.kvmnn = KeyValueMemoryNet(text_embeddings=encoder.embedding, num_classes=None, nn_dropout=nn_dropout)
+        self.use_memory = use_memory
 
-    def forward(self, contexts, responses):
+    def forward(self, contexts, responses, memory_keys, memory_key_lengths, memory_values, memory_value_lengths):
+        context_lengths = (contexts > 0).sum(dim=-1)
+
         context_os, _ = self.encoder(contexts)
+        context_encodings = context_os[:,-1,:]
         response_os, _ = self.encoder(responses)
-
         response_encodings = response_os[:,-1,:]
-        results = torch.bmm((context_os[:,-1,:] @ self.M).unsqueeze(1), response_encodings.unsqueeze(-1)).squeeze()
+
+        if self.use_memory:
+            memory_encodings = self.kvmnn(query=contexts, query_lengths=context_lengths,
+                                           memory_keys=memory_keys, memory_key_lengths=memory_key_lengths,
+                                           memory_values=memory_values, memory_value_lengths=memory_value_lengths)
+            context_encodings += memory_encodings
+
+        results = torch.bmm((context_encodings @ self.M).unsqueeze(1), response_encodings.unsqueeze(-1)).squeeze()
         results = torch.sigmoid(results)
 
         return results, response_encodings

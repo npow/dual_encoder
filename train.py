@@ -13,6 +13,7 @@ import torch
 
 CHECKPOINT_DIR = os.environ['CHECKPOINT_DIR']
 
+use_memory = True
 encoder_model = models.Encoder(
     input_size=100,  # embedding dim
     hidden_size=200,  # rnn dim
@@ -22,7 +23,7 @@ encoder_model = models.Encoder(
 )
 encoder_model.cuda()
 
-model = models.DualEncoder(encoder_model)
+model = models.DualEncoder(encoder_model, use_memory=use_memory)
 model.cuda()
 
 loss_fn = torch.nn.BCELoss()
@@ -40,21 +41,19 @@ for i in range(num_epochs):
     model = model.train()
     batch = data.get_batch(i, batch_size)
     batch = list(map(preprocessing.process_train, batch))
-    count = 0
 
-    cs, rs, ys = [], [], []
-    for c, r, y in batch:
-        count += 1
+    cs, rs, memory_keys, memory_key_lengths, memory_values, memory_value_lengths, ys = zip(*batch)
+    cs = torch.LongTensor(cs).cuda()
+    rs = torch.LongTensor(rs).cuda()
+    ys = torch.FloatTensor(ys).cuda()
+    memory_keys = torch.LongTensor(memory_keys).cuda()
+    memory_key_lengths = torch.LongTensor(memory_key_lengths).cuda()
+    memory_values = torch.LongTensor(memory_values).cuda()
+    memory_value_lengths = torch.LongTensor(memory_value_lengths).cuda()
 
-        cs.append(torch.LongTensor(c))
-        rs.append(torch.LongTensor(r))
-        ys.append(torch.FloatTensor([y]))
-
-    cs = Variable(torch.stack(cs, 0)).cuda()
-    rs = Variable(torch.stack(rs, 0)).cuda()
-    ys = Variable(torch.stack(ys, 0)).cuda()
-
-    y_preds, responses = model(cs, rs)
+    y_preds, responses = model(contexts=cs, responses=rs,
+                               memory_keys=memory_keys, memory_key_lengths=memory_key_lengths,
+                               memory_values=memory_values, memory_value_lengths=memory_value_lengths)
     loss = loss_fn(y_preds, ys)
 
     recall_k = evaluate.evaluate(model, size=evaluate_batch_size, split='dev')
