@@ -13,6 +13,8 @@ import time
 import torch
 
 CHECKPOINT_DIR = os.environ['CHECKPOINT_DIR']
+pretrained_vectors = 'glove'
+input_size = 100 if pretrained_vectors == 'glove' else 300
 
 use_memory = True
 encoder_model = models.Encoder(
@@ -21,7 +23,7 @@ encoder_model = models.Encoder(
     vocab_size=len(data.vocab),  # vocab size
     bidirectional=True,  # really should change!
     rnn_type='lstm',
-    pretrained_vectors='glove',
+    pretrained_vectors=pretrained_vectors,
 )
 encoder_model.cuda()
 
