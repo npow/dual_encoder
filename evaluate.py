@@ -1,6 +1,5 @@
 import data
 import numpy as np
-import preprocessing
 import torch
 from tqdm import tqdm
 from tensorflow.keras.preprocessing.sequence import pad_sequences
@@ -17,7 +16,6 @@ def evaluate(model, size=None, split='dev'):
         ds = data.get_validation(size)
     else:
         ds = data.get_test(size)
-    ds = list(map(preprocessing.process_valid, ds))
     recall_k = {k: 0 for k in range(1, 11)}
 
     for row in tqdm(ds):

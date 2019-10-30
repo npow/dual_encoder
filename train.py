@@ -18,7 +18,7 @@ use_memory = True
 encoder_model = models.Encoder(
     input_size=100,  # embedding dim
     hidden_size=100,  # rnn dim
-    vocab_size=len(preprocessing.vocab),  # vocab size
+    vocab_size=len(data.vocab),  # vocab size
     bidirectional=True,  # really should change!
     rnn_type='lstm',
     pretrained_vectors='glove',
@@ -35,7 +35,7 @@ learning_rate = 0.001
 num_epochs = 100
 batch_size = 32
 evaluate_batch_size = None
-num_batches = int(10e6//batch_size)
+num_batches = int(len(data.L_train)//batch_size)
 
 optimizer = optim.Adam(model.parameters(), lr=learning_rate)
 
@@ -46,7 +46,6 @@ for i in range(num_epochs):
     recalls = []
     for batch_idx in tqdm(range(num_batches)):
         batch = data.get_batch(batch_idx, batch_size)
-        batch = preprocessing.process_train_batch(batch)
 
         cs = torch.LongTensor(batch['cs']).cuda()
         rs = torch.LongTensor(batch['rs']).cuda()
