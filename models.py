@@ -196,8 +196,8 @@ class KeyValueMemoryNet(Module):
         vocab_size, embedding_dim = text_embeddings.weight.shape
         self._embedding_dim = embedding_dim
 
-        self.encoder_in = Encoder(text_embeddings, nn_dropout=nn_dropout)
-        self.encoder_out = Encoder(text_embeddings, nn_dropout=nn_dropout)
+        self.encoder_in = KvmnnEncoder(text_embeddings, nn_dropout=nn_dropout)
+        self.encoder_out = KvmnnEncoder(text_embeddings, nn_dropout=nn_dropout)
 
         if num_classes is None:
             self.linear = Identity()
@@ -241,7 +241,7 @@ class KeyValueMemoryNet(Module):
         return result
 
 
-class Encoder(Module):
+class KvmnnEncoder(Module):
     """Embeds queries, memories or responses into vectors."""
 
     def __init__(self, text_embeddings, nn_dropout=0.):
