@@ -82,10 +82,12 @@ class DualEncoder(nn.Module):
         h_size = self.encoder.hidden_size * self.encoder.num_directions
         M = torch.FloatTensor(h_size, h_size).cuda()
         init.normal_(M)
-        self.M = nn.Parameter(
-            M,
-            requires_grad=True,
-        )
+        self.M = nn.Parameter(M, requires_grad=True)
+
+        N = torch.FloatTensor(h_size, h_size).cuda()
+        init.normal_(N)
+        self.N = nn.Parameter(N, requires_grad=True)
+
         self.kvmnn = KeyValueMemoryNet(text_embeddings=encoder.embedding, num_classes=None, nn_dropout=nn_dropout)
         self.use_memory = use_memory
 
@@ -97,14 +99,15 @@ class DualEncoder(nn.Module):
         response_os, _ = self.encoder(responses)
         response_encodings = response_os[:,-1,:]
 
+        results = torch.bmm((context_encodings @ self.M).unsqueeze(1), response_encodings.unsqueeze(-1))
+
         if self.use_memory:
             memory_encodings = self.kvmnn(query=contexts, query_lengths=context_lengths,
-                                           memory_keys=memory_keys, memory_key_lengths=memory_key_lengths,
-                                           memory_values=memory_values, memory_value_lengths=memory_value_lengths)
-            context_encodings = context_encodings + memory_encodings
+                                          memory_keys=memory_keys, memory_key_lengths=memory_key_lengths,
+                                          memory_values=memory_values, memory_value_lengths=memory_value_lengths)
+            results = results + torch.bmm((memory_encodings @ self.N).unsqueeze(1), response_encodings.unsqueeze(-1))
 
-        results = torch.bmm((context_encodings @ self.M).unsqueeze(1), response_encodings.unsqueeze(-1)).squeeze()
-        results = torch.sigmoid(results).unsqueeze(1)
+        results = torch.sigmoid(results).unsqueeze(-1)
 
         return results, response_encodings
 
