@@ -70,8 +70,11 @@ for i in range(num_epochs):
             optimizer.step()
 
     recall_k = evaluate.evaluate(model, size=evaluate_batch_size, split='dev')
-    early_stopping(recall_k[1], model)
     print('epoch: ', i, 'loss: ', np.mean(losses), 'val_recall: ', recall_k)
+    early_stopping(recall_k[1], model)
+    if early_stopping.early_stop:
+        print("Early stopping")
+        break
 
 recall_k = evaluate.evaluate(model, size=evaluate_batch_size, split='test')
 print('test_recall: ', recall_k)
