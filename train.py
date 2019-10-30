@@ -1,6 +1,24 @@
-from torch import optim
-from torch.autograd import Variable
-from tqdm import tqdm
+import argparse
+
+def str2bool(v):
+    if isinstance(v, bool):
+        return v
+    if v.lower() in ('yes', 'true', 't', 'y', '1'):
+        return True
+    elif v.lower() in ('no', 'false', 'f', 'n', '0'):
+        return False
+    else:
+        raise argparse.ArgumentTypeError('Boolean value expected.')
+
+argparser = argparse.ArgumentParser()
+argparser.add_argument('--checkpoint_dir', type=str)
+argparser.add_argument('--pretrained_vectors', type=str, default='glove')
+argparser.add_argument('--lr', type=float, default=0.001)
+argparser.add_argument('--num_epochs', type=int, default=100)
+argparser.add_argument('--batch_size', type=int, default=32)
+argparser.add_argument('--patience', type=int, default=10)
+argparser.add_argument('--use_memory', type=int, default=0)
+args = argparser.parse_args()
 
 import data
 import datetime
@@ -11,12 +29,20 @@ import os
 import preprocessing
 import time
 import torch
+from torch import optim
+from torch.autograd import Variable
+from tqdm import tqdm
 
-CHECKPOINT_DIR = os.environ['CHECKPOINT_DIR']
-pretrained_vectors = 'stackexchange'
+pretrained_vectors = args.pretrained_vectors
+checkpoint_dir = args.checkpoint_dir
+learning_rate = args.lr
+num_epochs = args.num_epochs
+batch_size = args.batch_size
+evaluate_batch_size = None
+patience = args.patience
 input_size = 100 if pretrained_vectors == 'glove' else 300
+use_memory = args.use_memory != 0
 
-use_memory = False
 encoder_model = models.Encoder(
     input_size=input_size,  # embedding dim
     hidden_size=input_size,  # rnn dim
@@ -33,14 +59,9 @@ model.cuda()
 loss_fn = torch.nn.BCELoss()
 loss_fn.cuda()
 
-learning_rate = 0.001
-num_epochs = 100
-batch_size = 32
-evaluate_batch_size = None
 num_batches = int(len(data.L_train)//batch_size)
-patience = 10
 
-model_file = '{}/model.pt'.format(CHECKPOINT_DIR)
+model_file = '{}/model.pt'.format(checkpoint_dir)
 optimizer = optim.Adam(model.parameters(), lr=learning_rate)
 early_stopping = models.EarlyStopping(model_file=model_file, patience=patience, verbose=True)
 
