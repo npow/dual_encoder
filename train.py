@@ -13,13 +13,13 @@ import time
 import torch
 
 CHECKPOINT_DIR = os.environ['CHECKPOINT_DIR']
-pretrained_vectors = 'glove'
+pretrained_vectors = 'stackexchange'
 input_size = 100 if pretrained_vectors == 'glove' else 300
 
-use_memory = True
+use_memory = False
 encoder_model = models.Encoder(
-    input_size=100,  # embedding dim
-    hidden_size=100,  # rnn dim
+    input_size=input_size,  # embedding dim
+    hidden_size=input_size,  # rnn dim
     vocab_size=len(data.vocab),  # vocab size
     bidirectional=True,  # really should change!
     rnn_type='lstm',
