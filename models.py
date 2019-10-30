@@ -90,10 +90,10 @@ class DualEncoder(nn.Module):
 
         self.kvmnn = KeyValueMemoryNet(text_embeddings=encoder.embedding, num_classes=None, nn_dropout=nn_dropout)
         self.use_memory = use_memory
-        self.memory_gate = nn.Sequential([
+        self.memory_gate = nn.Sequential(
             nn.Linear(h_size, 1, bias=True),
             nn.Sigmoid(),
-        ])
+        )
 
     def forward(self, contexts, responses, memory_keys, memory_key_lengths, memory_values, memory_value_lengths):
         context_lengths = (contexts > 0).sum(dim=-1)
