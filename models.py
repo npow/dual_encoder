@@ -24,6 +24,7 @@ class Encoder(nn.Module):
             bidirectional=True,
             rnn_type='gru',
             pretrained_vectors='glove',
+            fine_tune_W=True,
     ):
         super(Encoder, self).__init__()
         self.vocab = vocab
@@ -34,6 +35,7 @@ class Encoder(nn.Module):
         self.num_layers = num_layers
         self.rnn_type = rnn_type
         self.pretrained_vectors = pretrained_vectors
+        self.fine_tune_W = fine_tune_W
 
         self.embedding = nn.Embedding(vocab_size, input_size, sparse=False, padding_idx=0)
 
@@ -75,6 +77,9 @@ class Encoder(nn.Module):
         embedding_weights[0] = torch.FloatTensor([0] * self.input_size)
         del self.embedding.weight
         self.embedding.weight = nn.Parameter(embedding_weights)
+        if not self.fine_tune_W:
+            print('WARNING: not fine-tuning embeddings')
+            self.embedding.weight.requires_grad = False
 
 
 class DualEncoder(nn.Module):

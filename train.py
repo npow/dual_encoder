@@ -18,6 +18,7 @@ evaluate_batch_size = None
 patience = args.patience
 input_size = 300
 use_memory = args.use_memory != 0
+fine_tune_W = args.fine_tune_W != 0
 
 
 L_train = load_jsonl('data/train.jsonl')
@@ -38,11 +39,12 @@ L_test = [process_valid(vocab, row) for row in tqdm(L_test)]
 encoder_model = models.Encoder(
     vocab=vocab,
     input_size=input_size,  # embedding dim
-    hidden_size=input_size,  # rnn dim
+    hidden_size=args.hidden_size,  # rnn dim
     vocab_size=len(vocab),  # vocab size
     bidirectional=False,
     rnn_type='lstm',
     pretrained_vectors=pretrained_vectors,
+    fine_tune_W=fine_tune_W,
 )
 encoder_model.cuda()
 
