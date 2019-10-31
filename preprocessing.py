@@ -30,9 +30,9 @@ def load_glove_embeddings(vocab, filename='data/glove.840B.300d.txt'):
     lines = open(filename).readlines()
     embeddings = {}
     for line in tqdm(lines):
-        word = line.split()[0]
-        embedding = list(map(float, line.split()[1:]))
+        word = line.split(' ')[0]
         if word in vocab:
+            embedding = list(map(float, line.split(' ')[1:]))
             embeddings[vocab[word]] = embedding
 
     return embeddings
