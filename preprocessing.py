@@ -3,9 +3,13 @@ from nltk.stem import SnowballStemmer
 from tensorflow.keras.preprocessing.sequence import pad_sequences
 from gensim.models import Word2Vec
 from tqdm import tqdm
+from params import args
+DEBUG = args.debug
 
 
 def load_embeddings(vocab, vectors):
+    if DEBUG:
+        return {}
     if vectors == 'glove':
         return load_glove_embeddings(vocab)
     elif vectors == 'stackexchange':

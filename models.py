@@ -92,8 +92,10 @@ class DualEncoder(nn.Module):
         self.M = nn.Parameter(M, requires_grad=True)
 
         N = torch.FloatTensor(h_size, h_size).cuda()
+        #N = torch.FloatTensor(self.encoder.input_size, h_size).cuda()
         init.normal_(N)
         self.N = nn.Parameter(N, requires_grad=True)
+        self.bridge = nn.Linear(self.encoder.input_size, h_size)
 
         self.kvmnn = KeyValueMemoryNet(text_embeddings=encoder.embedding, num_classes=None, nn_dropout=nn_dropout)
         self.use_memory = use_memory
@@ -116,6 +118,7 @@ class DualEncoder(nn.Module):
             memory_encodings = self.kvmnn(query=contexts, query_lengths=context_lengths,
                                           memory_keys=memory_keys, memory_key_lengths=memory_key_lengths,
                                           memory_values=memory_values, memory_value_lengths=memory_value_lengths)
+            memory_encodings = self.bridge(memory_encodings)
             memory_results = (memory_encodings @ self.N)
             #alpha = self.memory_gate(memory_results)
             mNr = torch.bmm(memory_results.unsqueeze(1), response_encodings.unsqueeze(-1)).squeeze(-1)
@@ -242,7 +245,7 @@ class KeyValueMemoryNet(Module):
             similarity = self.similarity(query_embedding, memory_keys_embedding).unsqueeze(1)
             softmax = self.softmax(similarity)
             value_reading = torch.matmul(softmax, memory_values_embedding)
-            result = self.linear(value_reading.squeeze(1))# + query_embedding.squeeze(1))
+            result = self.linear(value_reading.squeeze(1) + query_embedding.squeeze(1))
         else:
             result = self.linear(query_embedding.squeeze(1))
         return result

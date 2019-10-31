@@ -5,12 +5,15 @@ from tqdm import tqdm
 from tensorflow.keras.preprocessing.sequence import pad_sequences
 from params import args
 use_memory = args.use_memory != 0
+DEBUG = args.debug
 
 def load_jsonl(fname):
     lines = []
     with open(fname) as f:
         for line in f:
             lines.append(line)
+            if DEBUG and len(lines) == 10:
+                break
     return [json.loads(s.strip()) for s in tqdm(lines)]
 
 
