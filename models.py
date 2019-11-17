@@ -48,6 +48,15 @@ class Encoder(nn.Module):
                 bidirectional=bidirectional,
                 batch_first=True,
             ).cuda()
+        elif rnn_type == 'rnn':
+            self.rnn = nn.RNN(
+                input_size,
+                self.hidden_size,
+                num_layers=num_layers,
+                dropout=dropout,
+                bidirectional=bidirectional,
+                batch_first=True,
+            )
         else:
             self.rnn = nn.LSTM(
                 input_size,
@@ -117,12 +126,13 @@ class DualEncoder(nn.Module):
         if self.use_memory:
             memory_encodings = self.kvmnn(query=contexts, query_lengths=context_lengths,
                                           memory_keys=memory_keys, memory_key_lengths=memory_key_lengths,
-                                          memory_values=memory_values, memory_value_lengths=memory_value_lengths)
+                                          memory_values=memory_values, memory_value_lengths=memory_value_lengths,
+                                          encoder=None)
             memory_encodings = self.bridge(memory_encodings)
             memory_results = (memory_encodings @ self.N)
-            #alpha = self.memory_gate(memory_results)
+            alpha = self.memory_gate(context_encodings @ self.M)
             mNr = torch.bmm(memory_results.unsqueeze(1), response_encodings.unsqueeze(-1)).squeeze(-1)
-            results = results + mNr
+            results = results + alpha * mNr
 
         results = torch.sigmoid(results)
 
@@ -221,7 +231,7 @@ class KeyValueMemoryNet(Module):
         self.softmax = Softmax(dim=2)
         self.use_memory = use_memory
 
-    def forward(self, query, query_lengths, memory_keys, memory_key_lengths, memory_values, memory_value_lengths):
+    def forward(self, query, query_lengths, memory_keys, memory_key_lengths, memory_values, memory_value_lengths, encoder=None):
         """Performs forward step.
         Args:
             query (torch.Tensor): Tensor with shape of (NxM) where N is batch size,
@@ -239,13 +249,14 @@ class KeyValueMemoryNet(Module):
         query_embedding = self.encoder_in(query, query_lengths).view(*view_shape)
 
         if self.use_memory:
-            memory_keys_embedding = self.encoder_in(memory_keys, memory_key_lengths)
-            memory_values_embedding = self.encoder_in(memory_values, memory_value_lengths)
+            memory_keys_embedding = self.encoder_in(memory_keys, memory_key_lengths, encoder)
+            memory_values_embedding = memory_keys_embedding
+            #memory_values_embedding = self.encoder_in(memory_values, memory_value_lengths, encoder)
 
             similarity = self.similarity(query_embedding, memory_keys_embedding).unsqueeze(1)
             softmax = self.softmax(similarity)
-            value_reading = torch.matmul(softmax, memory_values_embedding)
-            result = self.linear(value_reading.squeeze(1) + query_embedding.squeeze(1))
+            value_reading = torch.matmul(softmax, memory_keys_embedding)
+            result = self.linear(value_reading.squeeze(1))
         else:
             result = self.linear(query_embedding.squeeze(1))
         return result
@@ -263,15 +274,24 @@ class KvmnnEncoder(Module):
         super().__init__()
         self.embedding = text_embeddings #Embedding(*text_embeddings.weight.shape)
         self.dropout = nn.Dropout(nn_dropout)
+        self.linear = nn.Linear(self.embedding.embedding_dim, self.embedding.embedding_dim)
 
-    def forward(self, tokens, token_lengths):
+    def forward(self, tokens, token_lengths, encoder=None):
         tokens_shape = tokens.shape
         if len(tokens_shape) == 3:
             tokens = tokens.view((-1, tokens_shape[-1]))
             token_lengths = token_lengths.view((-1,))
-        emb_tokens = self.embedding(tokens)
-        token_lengths[token_lengths==0] = 1  # HACK
-        retval = emb_tokens.sum(1) / token_lengths.view((tokens.shape[0], -1)).cuda().float()
+
+        if encoder is not None:
+            token_os, _ = encoder(tokens)
+            retval = token_os[:,-1,:]
+        else:
+            emb_tokens = self.embedding(tokens)
+            token_lengths[token_lengths==0] = 1  # HACK
+            retval = emb_tokens.sum(1) / token_lengths.view((tokens.shape[0], -1)).cuda().float()
+
+        retval = self.linear(retval)
+
         if len(tokens_shape) == 3:
-            retval = retval.view((tokens_shape[0], tokens_shape[1], self.embedding.embedding_dim))
+            retval = retval.view((tokens_shape[0], tokens_shape[1], -1))
         return self.dropout(retval)

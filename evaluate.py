@@ -20,8 +20,10 @@ def evaluate(L, model, size=None):
         distractors = row['ds']
         memory_keys = row['memory_keys']
         memory_key_lengths = row['memory_key_lengths']
-        memory_values = row['memory_values']
-        memory_value_lengths = row['memory_value_lengths']
+        memory_values = memory_keys
+        memory_value_lengths = memory_key_lengths
+        #memory_values = row['memory_values']
+        #memory_value_lengths = row['memory_value_lengths']
 
         with torch.no_grad():
             cs = Variable(torch.stack([torch.LongTensor(context) for i in range(10)], 0)).cuda()

@@ -53,7 +53,7 @@ def numberize(vocab, inp):
 
 
 def process_sequence(vocab, seq):
-    seq = pad_sequences([numberize(vocab, x) for x in seq], padding='post')
+    seq = pad_sequences([numberize(vocab, x) for x in seq], padding='post', maxlen=160)
     seq_lens = (seq > 0).sum(axis=-1)
     return seq, seq_lens
 
@@ -92,8 +92,8 @@ def process_train_batch(rows):
     ys = [row['y'] for row in rows]
 
     if use_memory:
-        memory_keys = pad_sequences(list(itertools.chain(*[row['memory_keys'] for row in rows]))).reshape((bsz, 50, -1))
-        memory_values = pad_sequences(list(itertools.chain(*[row['memory_values'] for row in rows]))).reshape((bsz, 50, -1))
+        memory_keys = pad_sequences(list(itertools.chain(*[row['memory_keys'] for row in rows])), maxlen=160).reshape((bsz, 50, -1))
+        memory_values = pad_sequences(list(itertools.chain(*[row['memory_values'] for row in rows])), maxlen=160).reshape((bsz, 50, -1))
         memory_key_lengths = (memory_keys > 0).sum(-1)
         memory_value_lengths = (memory_values > 0).sum(-1)
     else:

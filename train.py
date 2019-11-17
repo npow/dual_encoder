@@ -28,10 +28,10 @@ def load_data(eval_model):
 
 def create_model(
         vocab,
-        hidden_size,
         pretrained_vectors,
         fine_tune_W,
         use_memory,
+        hidden_size=300,
         input_size=300,
         rnn_type='lstm',
         bidirectional=False,
@@ -86,8 +86,10 @@ def do_train(
             ys = torch.FloatTensor(batch['ys']).cuda()
             memory_keys = torch.LongTensor(batch['memory_keys']).cuda()
             memory_key_lengths = torch.LongTensor(batch['memory_key_lengths']).cuda()
-            memory_values = torch.LongTensor(batch['memory_values']).cuda()
-            memory_value_lengths = torch.LongTensor(batch['memory_value_lengths']).cuda()
+            memory_values = memory_keys
+            memory_value_lengths = memory_key_lengths
+            #memory_values = torch.LongTensor(batch['memory_values']).cuda()
+            #memory_value_lengths = torch.LongTensor(batch['memory_value_lengths']).cuda()
 
             optimizer.zero_grad()
             with torch.autograd.set_detect_anomaly(True):
@@ -121,12 +123,22 @@ if not args.pretrained_model_dir:
 else:
     with open('{}/params.pkl'.format(args.pretrained_model_dir), 'rb') as f:
         model_params = pickle.load(f)
+    model_params['fine_tune_W'] = True
+    model_params['batch_size'] = 32
     model = create_model(vocab, **model_params)
-    state_dict = '{}/model.pt'.format(args.pretrained_model_dir)
-    model.load_state_dict(torch.load(state_dict))
+    model_dict = model.state_dict()
+    pretrained_dict = torch.load('{}/model.pt'.format(args.pretrained_model_dir))
+    pretrained_dict = {k: v for k, v in pretrained_dict.items() if k in model_dict}
+    model_dict.update(pretrained_dict)
+    model.load_state_dict(model_dict)
+
 
 if args.force_use_memory:
     model.use_memory = True
+    for param in model.parameters():
+        param.requires_grad = True
+    for param in list(model.bridge.parameters()) + [model.N] + list(model.memory_gate.parameters()):
+        param.requires_grad = True
 
 if args.eval_only:
     do_eval(model, L_test)
