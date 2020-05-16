@@ -92,9 +92,10 @@ class Encoder(nn.Module):
 
 
 class DualEncoder(nn.Module):
-    def __init__(self, encoder, use_memory=False, nn_dropout=0.0):
+    def __init__(self, encoder, knowledge_encoder, use_memory=False, nn_dropout=0.0):
         super(DualEncoder, self).__init__()
         self.encoder = encoder
+        self.knowledge_encoder = knowledge_encoder
         h_size = self.encoder.hidden_size * self.encoder.num_directions
         M = torch.FloatTensor(h_size, h_size).cuda()
         init.normal_(M)
@@ -106,7 +107,7 @@ class DualEncoder(nn.Module):
         self.N = nn.Parameter(N, requires_grad=True)
         self.bridge = nn.Linear(self.encoder.input_size, h_size)
 
-        self.kvmnn = KeyValueMemoryNet(text_embeddings=encoder.embedding, num_classes=None, nn_dropout=nn_dropout)
+        self.kvmnn = KeyValueMemoryNet(text_embeddings=encoder.embedding, knowledge_embeddings=knowledge_encoder.embedding, num_classes=None, nn_dropout=nn_dropout)
         self.use_memory = use_memory
         self.memory_gate = nn.Sequential(
             nn.Linear(h_size, 1, bias=True),
@@ -205,7 +206,7 @@ class KeyValueMemoryNet(Module):
     This implementation supports batch training.
     """
 
-    def __init__(self, text_embeddings, num_classes, nn_dropout=0., use_memory=True):
+    def __init__(self, text_embeddings, knowledge_embeddings, num_classes, nn_dropout=0., use_memory=True):
         """Initializes model layers.
         Args:
             vocab_size (int): Number of tokens in corpus. This is used to init embeddings.
@@ -217,6 +218,7 @@ class KeyValueMemoryNet(Module):
         self._embedding_dim = embedding_dim
 
         self.encoder_in = KvmnnEncoder(text_embeddings, nn_dropout=nn_dropout)
+        self.encoder_ke = KvmnnEncoder(knowledge_embeddings, nn_dropout=nn_dropout)
         self.encoder_out = KvmnnEncoder(text_embeddings, nn_dropout=nn_dropout)
 
         if num_classes is None:
@@ -249,7 +251,7 @@ class KeyValueMemoryNet(Module):
         query_embedding = self.encoder_in(query, query_lengths).view(*view_shape)
 
         if self.use_memory:
-            memory_keys_embedding = self.encoder_in(memory_keys, memory_key_lengths, encoder)
+            memory_keys_embedding = self.encoder_ke(memory_keys, memory_key_lengths, encoder)
             memory_values_embedding = memory_keys_embedding
             #memory_values_embedding = self.encoder_in(memory_values, memory_value_lengths, encoder)
 

@@ -49,7 +49,19 @@ def create_model(
     )
     encoder_model.cuda()
 
-    model = models.DualEncoder(encoder_model, use_memory=use_memory)
+    knowledge_encoder = models.Encoder(
+        vocab=vocab,
+        input_size=input_size,  # embedding dim
+        hidden_size=hidden_size,  # rnn dim
+        vocab_size=len(vocab),  # vocab size
+        bidirectional=bidirectional,
+        rnn_type=rnn_type,
+        pretrained_vectors=pretrained_vectors,
+        fine_tune_W=fine_tune_W,
+    )
+    knowledge_encoder.cuda()
+
+    model = models.DualEncoder(encoder_model, knowledge_encoder, use_memory=use_memory)
     model = model.cuda()
 
     return model
